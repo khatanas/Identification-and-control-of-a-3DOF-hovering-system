@@ -115,11 +115,11 @@ stabPitch = {R0,S0,T0};
 Pp = P;
 
 
-% % store
-% save([store_path file_Ks],'stabPitch');
-% % export to myRIO
-% pitchSolo = f.labviewRST(R0,S0,T0,'solo');
-% f.writeBin(ctrl_path,ctrl_name{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
+% store
+save([store_path file_Ks],'stabPitch');
+% export to myRIO
+pitchSolo = f.labviewRST(R0,S0,T0,'solo');
+f.writeBin(ctrl_path,ctrl_name{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
 
 %*************************** ROLL ***************************************%
 % desired poles
@@ -149,11 +149,11 @@ end
 stabRoll = {R0,S0,T0};
 Pr = P;
 
-% % store
-% save([store_path file_Ks],'stabRoll','-append');
-% % export to myRIO
-% rollSolo = f.labviewRST(R0,S0,T0,'solo');
-% f.writeBin(ctrl_path,ctrl_name{2},f.labviewRST(OL,rollSolo,OL,'trio'));
+% store
+save([store_path file_Ks],'stabRoll','-append');
+% export to myRIO
+rollSolo = f.labviewRST(R0,S0,T0,'solo');
+f.writeBin(ctrl_path,ctrl_name{2},f.labviewRST(OL,rollSolo,OL,'trio'));
 
 %***************************** YAW ***************************************%
 % desired poles
@@ -180,21 +180,21 @@ end
 stabYaw = {R0,S0,T0};
 Py = P;
 
-% % store
-% save([store_path file_Ks],'stabYaw','-append');
-% % export to myRIO
-% yawSolo = f.labviewRST(R0,S0,T0,'solo');
-% f.writeBin(ctrl_path,ctrl_name{3},f.labviewRST(OL,OL,yawSolo,'trio'));
-% 
-% % export final to myRIO
-% f.writeBin(ctrl_path,ctrl_name{4},f.labviewRST(pitchSolo,rollSolo,yawSolo,'trio'));
+% store
+save([store_path file_Ks],'stabYaw','-append');
+% export to myRIO
+yawSolo = f.labviewRST(R0,S0,T0,'solo');
+f.writeBin(ctrl_path,ctrl_name{3},f.labviewRST(OL,OL,yawSolo,'trio'));
+
+% export final to myRIO
+f.writeBin(ctrl_path,ctrl_name{4},f.labviewRST(pitchSolo,rollSolo,yawSolo,'trio'));
 
 
 %% Ttest
 close all;
 out_path = '..\data\';
 out_folder = '\2_test\pry0_50\';
-out_names = {'testp0','testr0','testy0'};
+out_names = {'testp','testr','testy'};
 nb = 13;
 
 ttraj = 20*[zeros(1,10/Ts) ones(1,10/Ts) -ones(1,10/Ts) ones(1,10/Ts) zeros(1,30/Ts)];

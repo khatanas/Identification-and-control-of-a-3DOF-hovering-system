@@ -13,7 +13,7 @@ store_path = '.\store\';
 % ctrl_path = 'C:\Users\David\Desktop\ProjSem\3dof\Matlab\trash\';
 
 %sampling time 
-Ts = 10; %ms
+Ts = 50; %ms
 
 %additional time to reach steady-state
 t_SS = 10;
@@ -32,10 +32,10 @@ len_SS = t_SS/Ts_sec;   % corresponding # samples in steady state
 len = t_sim/Ts_sec;     % corresponding # samples in trajectory signal
 
 %generate PRBS (+ give infos)
-dist = f.generatePRBS(n,p,fD,Ts_sec,0);
+dist = f.generatePRBS(n,p,fD,Ts_sec,1);
 
 %test traj
-ttraj = [ones(1,10/Ts_sec) -ones(1,10/Ts_sec) ones(1,10/Ts_sec) zeros(1,30/Ts_sec)];
+ttraj = [zeros(1,t_SS/Ts_sec) ones(1,10/Ts_sec) -ones(1,10/Ts_sec) ones(1,10/Ts_sec) zeros(1,20/Ts_sec)];
 save([store_path 'ms50-ttraj'], 'ttraj');
 
 %% Create sequences for motor
@@ -54,7 +54,7 @@ SS = zeros(nb,len_SS);
 
 f.writeBin(sig_path, 'onesA', [SS ones(nb,len) SS]);
 f.writeBin(sig_path, 'distA', [SS repmat(dist',nb,1)]);
-f.writeBin(sig_path, 'ttrajA', [SS repmat(ttraj,nb,1)]);
+f.writeBin(sig_path, 'ttrajA', [repmat(ttraj,nb,1)]);
 f.writeBin(sig_path, 'testA', [SS randi([0,5],nb,len)]);
 
 %% Create controllers

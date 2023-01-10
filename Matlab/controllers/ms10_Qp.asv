@@ -193,8 +193,8 @@ f.simulationRSTPlot(Ar,Br,dr,Rf,Sf,Tf,P,Ts)
 %%
 %***************************** YAW ***************************************%
 % desired poles
-p1 = -0.95;
-P = [1 p1];
+p1 = 0.99;
+P = [1 -p1];
 
 % additionnal terms
 Hs = [1 -1];
@@ -204,7 +204,7 @@ Hr = [1 1];
 [~, ~, ~, Pmax] = f.generateRST(Ay,By,dy,P,Hr,Hs);
 
 % add auxiliary poles
-alpha = 0.8;
+alpha = 0.4;
 Pf = [1 -alpha];
 
 while length(P)<=Pmax
@@ -216,12 +216,12 @@ end
 stabYaw = {R0,S0,T0};
 %% perform Q parametrization
 clc;
-nq = 35;
+nq = 25;
 Q0 = ones(1,nq);
 Mm = 0.5;
-Uinf = 30;
+Uinf = 20;
 
-dy = 0;
+dr = 0;
 options = optimoptions('fmincon','MaxFunctionEvaluation',5e+3);
 
 Qopt = fmincon(@(Q)objFun(Ay,By,dy,R0,S0,P,Hr,Hs,Q,Ts),Q0,...
