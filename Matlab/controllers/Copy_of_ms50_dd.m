@@ -7,8 +7,6 @@
 
 clc; close all; clear all
 addpath('../')
-addpath 'C:\Program Files\Mosek\10.0\toolbox\r2017a'
-addpath 'C:\Program Files\Mosek\9.3\toolbox\R2015a'
 %%
 % sampling time
 Ts = 50;
@@ -72,18 +70,18 @@ G0s.OutputName = namesOut;
 close all;
 
 % current system
-Gp = G(1,1);
+Gp = G0s(1,1);
 K0p = R(1,1)*Sinv(1,1);
 S0 = feedback(1,Gp*K0p);
 
-% fixed terms (MUST EXIST IN K0)
+% 
 stab_order = order(K0p)      % initial order 
 Fy = [1 -1];                 % fixed parts in denominator.
 Fx = [1 1];                  % fixed parts in numerator.
 
 % desired controller specfications
 [num,den] = tfdata(K0p,'v'); % get numerator/denominator of PID controller
-orderK = order(K0p) + 12      % desired order
+orderK = order(K0p) + 13      % desired order
 den(orderK+1) = 0; % zero padding
 num(orderK+1) = 0; % zero padding
 den_new = deconv(den,Fy); % den = conv(den_new,Fy).
@@ -127,7 +125,7 @@ legend('G_{pr}','F_{pr}*G_{pr}')
 W1 = 1/(Sd*Fpr);
 
 % optimize step responde ||T||<1/W2
-W2 = 0.1*(s+epsilon); 
+W2 = 0.2*(s+epsilon); 
 W2 = frd(W2,G.Frequency); W2.Ts = Ts;
 
 % limit input ||U||<1/W3
@@ -136,7 +134,7 @@ W3 = c2d(1/tf(maxIn),Ts);
 % maxdB = 10;
 % W3 = 1/tf(10^(maxdB/20));
 
-bodemag(1/W1,1/W2,1/W3,1/W1+1/W2,  G.Frequency(2:end));
+bodemag(1/W1,1/W2,1/W3,  G.Frequency(2:end));
 legend('S<1/W1','T<1/W2','U<1/W3')
 
 

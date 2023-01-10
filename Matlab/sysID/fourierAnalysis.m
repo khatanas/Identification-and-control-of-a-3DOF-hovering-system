@@ -108,7 +108,7 @@ figure()
 bodemag(R2Y_CL,R2U_CL); grid minor ;
 title('System with controller(s)');legend('T','U')
 %% Get OL matrix: G
-G = R2Y_CL/R2U_CL;
+G = R2Y_CL*inv(R2U_CL);
 G.InputName = namesIn;
 G.OutputName = namesOut;
 
@@ -123,6 +123,32 @@ grid minor;title('G_{OL}')
 legend('sampling points','G','1st approx.')
 
 save([store_path file_G],'G')
+
+%% TEST TO BE DELETED
+% READ: location and file names for stabilizing controllers
+file_K0 = 'ms50_stabK0';
+K0 = load([store_path file_K0]);
+names_K0 = {'stabPitch','stabRoll','stabYaw'};
+%tf(0)
+init = repmat(tf([0],[1],Ts),[3,3]);
+
+% controllers to matrix form
+K = {init, init, init};
+for i = 1:3
+    tmp = getfield(K0, names_K0{i}); %pry
+    K{1}(i,i) = tf(tmp{1},1,Ts); %R
+    K{2}(i,i) = tf(1,tmp{2},Ts); %Sinv
+    K{3}(i,i) = tf(tmp{3},1,Ts); %T
+end
+R = K{1}; 
+Sinv = K{2};
+T = K{3};
+
+R2YG = R2Y_CL*inv(Sinv*T-Sinv*R*R2Y_CL);
+R2UG = R^(-1)*(T*inv(R2U_CL)-inv(Sinv));
+
+bodemag(G,'*',R2YG,R2UG,G0s,'--r',{f1,f2})
+legend('G','R2YG','R2UG')
 
 %%
 % figure()

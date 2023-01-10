@@ -29,8 +29,5 @@ subplot(2,2,3)
 bodemag(YoV);title('YoV')
 subplot(2,2,4)
 bodemag(UoV);title('UoV')
-
-% lsim(T,ones(1,length(Tp),Tp)
-% lsim(U,10*ones(1,length(Tp)),Tp)
 end
 

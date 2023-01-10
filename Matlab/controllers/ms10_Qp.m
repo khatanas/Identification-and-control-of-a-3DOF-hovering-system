@@ -12,11 +12,11 @@ ctrl_name = {'pqp_10','rqp_10','yqp_10','pryqp_10'};
 
 % where to store the discretized models and associated controllers
 store_path = '..\store\';
-file_Gds = 'ms10_Gs-disc-models-Qp';
+file_Gds = 'ms10_Gs-disc-models-qp';
 file_Ks = 'ms10_stabKqp';
 
 % load continuous time models
-load([store_path 'Gs-cont-models.mat'])
+load([store_path 'Gs-cont-models-qp.mat'])
 
 %*************************************************************************%
 Ts = Ts/1000;
@@ -88,7 +88,7 @@ close all;clc
 %*************************** PITCH ***************************************%
 % desired poles
 wn_pd = sqrt(Gp.Denominator{1}(end));
-xsi = 0.71;                           % increase damping
+xsi = 0.7;                           % increase damping
 p1 = -2*exp(-xsi*wn_pd*Ts)*cos(wn_pd*Ts*sqrt(1-xsi^2));
 p2 = exp(-2*xsi*wn_pd*Ts);
 P = [1 p1 p2];
@@ -110,14 +110,14 @@ while length(P)<=Pmax
 end
 
 % get coeffs
-[R0,S0,T0] = f.generateRST(Ap,Bp,dp,P,Hr,Hs);
+[R0,S0] = f.generateRST(Ap,Bp,dp,P,Hr,Hs);
 
 %% perform Q parametrization
 clc;
-nq = 15;
+nq = 16;
 Q0 = ones(1,nq);
 Mm = 0.5;
-Uinf = 20;
+Uinf = 30;
 
 dp = 0;
 options = optimoptions('fmincon','MaxFunctionEvaluation',5e+3);
@@ -135,13 +135,13 @@ save([store_path file_Ks],'qpPitch');
 % export to myRIO
 pitchSolo = f.labviewRST(Rf,Sf,Tf,'solo');
 f.writeBin(ctrl_path,ctrl_name{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
-
+%%
 f.simulationRSTPlot(Ap,Bp,dp,Rf,Sf,Tf,P,Ts)
 %%
 %*************************** ROLL ***************************************%
 % desired poles
 wn_rd = sqrt(Gr.Denominator{1}(end));
-xsi = 0.71;                           % increase damping
+xsi = 0.9;                           % increase damping
 p1 = -2*exp(-xsi*wn_rd*Ts)*cos(wn_rd*Ts*sqrt(1-xsi^2));
 p2 = exp(-2*xsi*wn_rd*Ts);
 P = [1 p1 p2];
@@ -167,10 +167,10 @@ stabRoll = {R0,S0,T0};
 
 %% perform Q parametrization
 clc;
-nq = 16;
+nq = 14;
 Q0 = ones(1,nq);
 Mm = 0.5;
-Uinf = 30;
+Uinf = 40;
 
 dr = 0;
 options = optimoptions('fmincon','MaxFunctionEvaluation',5e+3);
@@ -188,12 +188,12 @@ save([store_path file_Ks],'qpRoll','-append');
 % export to myRIO
 rollSolo = f.labviewRST(Rf,Sf,Tf,'solo');
 f.writeBin(ctrl_path,ctrl_name{2},f.labviewRST(OL,rollSolo,OL,'trio'));
-
+%%
 f.simulationRSTPlot(Ar,Br,dr,Rf,Sf,Tf,P,Ts)
 %%
 %***************************** YAW ***************************************%
 % desired poles
-p1 = -0.95;
+p1 = -0.99;
 P = [1 p1];
 
 % additionnal terms
@@ -204,7 +204,7 @@ Hr = [1 1];
 [~, ~, ~, Pmax] = f.generateRST(Ay,By,dy,P,Hr,Hs);
 
 % add auxiliary poles
-alpha = 0.8;
+alpha = 0.4;
 Pf = [1 -alpha];
 
 while length(P)<=Pmax
