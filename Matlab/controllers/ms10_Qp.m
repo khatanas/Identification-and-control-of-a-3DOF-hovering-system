@@ -136,7 +136,7 @@ pitchSolo = f.labviewRST(Rf,Sf,Tf,'solo');
 f.writeBin(ctrl_path,ctrl_name{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
 
 f.simulationQpPlot(Ap,Bp,dp,Rf,Sf,Tf,P,Ts,Uinf,Mm)
-%%
+ %%
 %*************************** ROLL ***************************************%
 % desired poles
 wn_rd = 2*sqrt(Gr.Denominator{1}(end));  % twice OL
@@ -211,9 +211,6 @@ Hr = [1 1];
 [~, ~, ~, Pmax] = f.generateRST(Ay,By,dy,P,Hr,Hs);
 
 % add auxiliary poles
-
-P = conv(P,Pf);
-
 alpha = -0.7;
 % alpha = -0.5;
 Pf = [1 alpha];

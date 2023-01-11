@@ -13,7 +13,7 @@ store_path = '.\store\';
 % ctrl_path = 'C:\Users\David\Desktop\ProjSem\3dof\Matlab\trash\';
 
 %sampling time 
-Ts = 10; %ms
+Ts = 50; %ms
 
 %additional time to reach steady-state
 t_SS = 10;

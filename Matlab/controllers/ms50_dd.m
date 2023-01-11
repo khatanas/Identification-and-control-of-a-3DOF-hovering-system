@@ -8,14 +8,13 @@
 clc; close all; clear all
 addpath('../')
 addpath 'C:\Program Files\Mosek\10.0\toolbox\r2017a'
-addpath 'C:\Program Files\Mosek\9.3\toolbox\R2015a'
 %%
 % sampling time
 Ts = 50;
 
 % READ: load identified frd
 store_path = '..\store\';
-store_name = 'ms50-G-CL-fD1';
+store_name = 'ms50-G-OL-fD1';
 G = getfield(load([store_path store_name]),'G');
 
 %*************************************************************************%
@@ -83,7 +82,7 @@ Fx = [1 1];                  % fixed parts in numerator.
 
 % desired controller specfications
 [num,den] = tfdata(K0p,'v'); % get numerator/denominator of PID controller
-orderK = order(K0p) + 12      % desired order
+orderK = 20 %order(K0p) + 12      % desired order
 den(orderK+1) = 0; % zero padding
 num(orderK+1) = 0; % zero padding
 den_new = deconv(den,Fy); % den = conv(den_new,Fy).
@@ -96,19 +95,23 @@ num_new = deconv(num,Fx); % num = conv(num_new,Fx).
 % legend('Gp','S0','T0')
 
 %% Initial desired S, no cross-term info
+close all;
 % desired bandwidth
-bwd = 10;
+bwd = 20;
 
 % high pass filter with 6 db after esired bw. add epsilon to avoid num
 % issues
-Sd = c2d(10^(6/20)*(s+epsilon)/(s+bwd),Ts);
+S1 = tf(1/(1/bwd*s+epsilon));
+S2 = tf(1/bwd*s+1);
+S3 = tf(0.5);
+W1 = (S1*S2*S3);
+W1 = c2d(W1,Ts,'Tustin');
 
-% Sd = frd(Sd,fs); Sd.Ts = dt;
-
-bodemag(S0,'--r',Sd,  G.Frequency(2:end))
+bodemag(S0,'--r',1/W1, G.Frequency(2:end));
 legend('S0','Sd')
 
 %% Filters for Pitch
+close all;
 % disturbances from Roll: ||S||<1/W1
 Gpr = G(1,2);
 wn_p = 2.21;
@@ -119,24 +122,29 @@ F1 = f.notchFilter(-20,0.8,wn_r);
 F2 = f.notchFilter(-14,0.5,wn_p);
 
 % only the first peak is a real disturbance from roll axis
-Fpr = c2d(F1*F2,Ts);
+Fpr = 1/c2d(F1*F2,Ts,'Tustin');
+
 figure()
-bodemag(Gpr,'-r',Fpr*Gpr, G.Frequency(2:end))
+bodemag(Gpr,'-r',1/Fpr*Gpr, G.Frequency(2:end))
 title('Filtered disturbance')
 legend('G_{pr}','F_{pr}*G_{pr}')
-W1 = 1/(Sd*Fpr);
+
+W1 = (S1*S2*S3);
+W1 = c2d(W1,Ts,'Tustin');
+W1 = W1*Fpr;
 
 % optimize step responde ||T||<1/W2
-W2 = 0.1*(s+epsilon); 
+W2 = 0.25*(s+epsilon); 
 W2 = frd(W2,G.Frequency); W2.Ts = Ts;
 
 % limit input ||U||<1/W3
-maxIn = 3;
-W3 = c2d(1/tf(maxIn),Ts);
-% maxdB = 10;
-% W3 = 1/tf(10^(maxdB/20));
+% maxIn = 3;
+% W3 = c2d(1/tf(maxIn),Ts);
+maxdB = 30;
+W3 = 1/tf(10^(maxdB/20)/(1/40*s+1)^3);
 
-bodemag(1/W1,1/W2,1/W3,1/W1+1/W2,  G.Frequency(2:end));
+figure()
+bodemag(1/W1,1/W2,1/W3,  G.Frequency(2:end));
 legend('S<1/W1','T<1/W2','U<1/W3')
 
 
@@ -146,20 +154,13 @@ ctrl = struct('num',num_new,'den',den_new,'Ts',Ts,'Fx',Fx,'Fy',Fy); % assemble c
 
 SYS.controller = ctrl;
 SYS.model = Gp; 
-% fs = fs(fs <1/Ts*2*pi);
 SYS.W = G.Frequency(2:end);
-% SYS.W = datadriven.utils.logspace2(G.Frequency(2),G.Frequency(end),500); % specify frequency grid where problem is solved
 
 % See different fields of OBJ
 OBJ.oinf.W1 = W1;   % Minimize || W1 S ||_\infty 
-% OBJ.oinf.W2 = W2;   % Minimize || W2 T ||_\infty 
+OBJ.oinf.W2 = W2;   % Minimize || W2 T ||_\infty 
 OBJ.oinf.W3 = W3;   % Minimize || W3 U ||_\infty 
-% OBJ.oinf.W4 = W4; % Only minimize || W4 V ||_\infty 
-
-% %% Constraints(s)
-% % See different fields of CON
-% W4 =  1/c2d(makeweight(2,0.1*pi/Ts,0),Ts);
-% CON.W2 = W2; % Only constraint || W2 T ||_\infty ≤ 1 
+% OBJ.oinf.W4 = W4;
 
 %% Solve problem
 % See different fields of PAR
@@ -194,12 +195,12 @@ close all;
 % ||S||<1/W1
 figure(1)
 subplot(221)
-bodemag(S,S0,'--r',1/W1,'og', G.Frequency(2:end))
+bodemag(S,S0,'--r',1/W1,'g', G.Frequency(2:end))
 legend('Sdd','Sstab')
 
 % ||U||<1/W3
 subplot(222)
-bodemag(U,U0,'--r',1/W3,'og',G.Frequency(2:end))
+bodemag(U,U0,'--r',1/W3,'g',G.Frequency(2:end))
 legend('Udd','Ustab')
 
 subplot(223)
@@ -207,10 +208,168 @@ bodemag(V,V0,'--r', {G.Frequency(2),G.Frequency(end)})
 legend('Vdd','Vstab')
 
 subplot(224)
-bodemag(T,T0,'--r',1/W2, 'og', {G.Frequency(2),G.Frequency(end)})
+bodemag(T,T0,'--r',1/W2, 'g', {G.Frequency(2),G.Frequency(end)})
 legend('Tdd','Tstab')
 
+% to q^-1
+Den = (cell2mat(Kdd.Denominator));
+Num = (cell2mat(Kdd.Numerator));
+d = Kdd.OutputDelay;
+
+Rdd = Num; 
+Sdd = Den;
+Tdd = sum(Rdd);
+
+pitchSolo = f.labviewRST(Rdd,Sdd,Tdd,'solo');
+f.labviewRST(pitchSolo,OL,OL,'trio');
+f.writeBin(ctrl_path,ctrl_names{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
+
 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%  ROLL  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+close all;
+
+% current system
+Gr = G(2,2);
+K0r = R(2,2)*Sinv(2,2);
+S0 = feedback(1,Gr*K0r);
+
+% fixed terms (MUST EXIST IN K0)
+stab_order = order(K0r)      % initial order 
+Fy = [1 -1];                 % fixed parts in denominator.
+Fx = [1 1];                  % fixed parts in numerator.
+
+% desired controller specfications
+[num,den] = tfdata(K0p,'v'); % get numerator/denominator of PID controller
+orderK = 30 %order(K0p) + 12      % desired order
+den(orderK+1) = 0; % zero padding
+num(orderK+1) = 0; % zero padding
+den_new = deconv(den,Fy); % den = conv(den_new,Fy).
+num_new = deconv(num,Fx); % num = conv(num_new,Fx).
+
+
+% T0 = 1 - S0;
+% 
+% bodemag(Gp,S0,T0)
+% legend('Gp','S0','T0')
+
+%% Initial desired S, no cross-term info
+close all;
+% desired bandwidth
+bwd = 40;
+
+% high pass filter with 6 db after esired bw. add epsilon to avoid num
+% issues
+S1 = tf(1/(1/bwd*s+epsilon));
+S2 = tf(1/bwd*s+1);
+S3 = tf(0.5);
+W1 = (S1*S2*S3);
+W1 = c2d(W1,Ts,'Tustin');
+
+bodemag(S0,'--r',1/W1, G.Frequency(2:end));
+legend('S0','Sd')
+
+%% Filters for Pitch
+close all;
+% disturbances from Roll: ||S||<1/W1
+Grp = G(2,1);
+bodemag(Grp)
+%%
+
+w1 = 1.4;
+%filter large peak
+F1 = f.notchFilter(-20,5,w1);
+
+% only the first peak is a real disturbance from roll axis
+Frp = 1/c2d(F1,Ts,'Tustin');
+
+figure()
+bodemag(Grp,1/Frp,'-r',1/Frp*Grp, G.Frequency(2:end))
+title('Filtered disturbance')
+legend('G_{rp}','1/Fpr','1/F_{pr}*G_{pr}')
+%%
+W1 = (S1*S2*S3);
+W1 = c2d(W1,Ts,'Tustin');
+W1 = W1*Frp;
+
+% optimize step responde ||T||<1/W2
+W2 = 0.25*(s+epsilon); 
+W2 = frd(W2,G.Frequency); W2.Ts = Ts;
+
+% limit input ||U||<1/W3
+% maxIn = 3;
+% W3 = c2d(1/tf(maxIn),Ts);
+maxdB = 20;
+W3 = 1/tf(10^(maxdB/20)/(1/40*s+1)^3);
+
+figure()
+bodemag(1/W1,1/W2,1/W3,  G.Frequency(2:end));
+legend('S<1/W1','T<1/W2','U<1/W3')
+
+
+%% dd opt init
+[SYS, OBJ, CON, PAR] = datadriven.utils.emptyStruct(); % load empty structure
+ctrl = struct('num',num_new,'den',den_new,'Ts',Ts,'Fx',Fx,'Fy',Fy); % assemble controller
+
+SYS.controller = ctrl;
+SYS.model = Gr; 
+SYS.W = G.Frequency(2:end);
+
+% See different fields of OBJ
+OBJ.oinf.W1 = W1;   % Minimize || W1 S ||_\infty 
+OBJ.oinf.W2 = W2;   % Minimize || W2 T ||_\infty 
+OBJ.oinf.W3 = W3;   % Minimize || W3 U ||_\infty 
+% OBJ.oinf.W4 = W4;
+
+%% Solve problem
+% See different fields of PAR
+PAR.tol = 1e-4; % stop when change in objective < 1e-4. 
+PAR.maxIter = 250; % max Number of iterations
+
+tic
+[controller,obj] = datadriven.datadriven(SYS,OBJ,CON,PAR,'fusion');
+toc
+
+Kdd = datadriven.utils.toTF(controller);
+% Other solver can be used as last additional argument:
+% [controller,obj] = datadriven(SYS,OBJ,CON,PAR,'sedumi'); to force YALMIP
+% to use sedumi as solver.
+% If mosek AND mosek Fusion are installed, you can use
+% [controller,obj] = datadriven(SYS,OBJ,CON,PAR,'fusion');
+% (much faster, no need for YALMIP as middle-man)
+
+%% Analysis using optimal controller
+
+S = feedback(1,Gr*Kdd);
+T = 1-S;
+U = feedback(Kdd,Gr*Kdd);
+V = feedback(Gp,Gr*Kdd);
+
+S0 = feedback(1,Gr*K0r);
+T0 = 1-S0;
+U0 = feedback(K0r,Gr*K0r);
+V0 = feedback(Gr,Gr*K0r);
+close all;
+
+% ||S||<1/W1
+figure(1)
+subplot(221)
+bodemag(S,S0,'--r',1/W1,'g', G.Frequency(2:end))
+legend('Sdd','Sstab')
+
+% ||U||<1/W3
+subplot(222)
+bodemag(U,U0,'--r',1/W3,'g',G.Frequency(2:end))
+legend('Udd','Ustab')
+
+subplot(223)
+bodemag(V,V0,'--r', {G.Frequency(2),G.Frequency(end)})
+legend('Vdd','Vstab')
+
+subplot(224)
+bodemag(T,T0,'--r',1/W2, 'g', {G.Frequency(2),G.Frequency(end)})
+legend('Tdd','Tstab')
 
 % to q^-1
 Den = (cell2mat(Kdd.Denominator));
@@ -221,20 +380,16 @@ Kexp = tf(Num,Den,Ts,'variable','q^-1','IODelay',d);
 Kexp;
 Rdd = Num; 
 Sdd = Den;
-Tdd = Num;
+Tdd = sum(Rdd);
 
-pitchSolo = f.labviewRST(Rdd,Sdd,Tdd,'solo');
-f.labviewRST(pitchSolo,OL,OL,'trio');
-f.writeBin(ctrl_path,ctrl_names{1},f.labviewRST(pitchSolo,OL,OL,'trio'));
+rollSolo = f.labviewRST(Rdd,Sdd,Tdd,'solo');
+f.writeBin(ctrl_path,ctrl_names{2},f.labviewRST(OL,rollSolo,OL,'trio'));
 
-%%
-ylim([-20 10])
-grid
-legend('Initial $\mathcal{S}$','Final $\mathcal{S}$','$\mathcal{T}$','$\overline{W_2}^{-1}$','interpreter','LaTeX')
-legend('Initial $\mathcal{S}$','Final $\mathcal{S}$','$\mathcal{T}$','$\overline{W_2}^{-1}$','interpreter','LaTeX')
-% Need to plot legend two times (bug with MATLAB 2020).
-shg
+f.writeBin(ctrl_path,'prdd_50',f.labviewRST(pitchSolo,rollSolo,OL,'trio'));
 
-disp(['H2 computed using trapz integration: ', num2str(obj.H2)])
-disp(['H2 true value: ', num2str(norm(minreal(S0*W1),2))])
-% True H2 value not accessible when using the FRF
+
+
+
+
+
+
