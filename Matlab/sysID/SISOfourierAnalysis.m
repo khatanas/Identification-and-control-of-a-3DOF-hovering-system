@@ -108,7 +108,7 @@ figure()
 bodemag(R2Y_CL,R2U_CL); grid minor ;
 title('System with controller(s)');legend('T','U')
 %% Get OL matrix: G
-G = R2Y_CL*inv(R2U_CL);
+G = R2U_CL\R2Y_CL;
 G.InputName = namesIn;
 G.OutputName = namesOut;
 
