@@ -63,16 +63,18 @@ Grd = Gd;
 save([store_path file_Gds], 'Grd','-append');
 
 % %*************************** YAW ****************************************%
-stepM = step(Gy,T);
+% Qp on Gydot
+Gydot = minreal(Gy);
+stepM = step(Gydot,T);
 
 % discretized model 
-Gd = c2d(Gy,Ts);
+Gd = c2d(Gydot,Ts);
 Ay = Gd.Denominator{1};
 By = Gd.Numerator{1};
 dy = Gd.OutputDelay;
 Gd = tf(By,Ay,Ts,'variable','q^-1','IODelay',dy);
 stepMd = step(Gd,T);
-Gyd = Gd;
+Gydotd = Gd;
 
 figure(); 
 hold on;
@@ -139,8 +141,8 @@ f.simulationQpPlot(Ap,Bp,dp,Rf,Sf,Tf,P,Ts,Uinf,Mm)
 %%
 %*************************** ROLL ***************************************%
 % desired poles
-wn_rd = 2*sqrt(Gr.Denominator{1}(end));  % twice OL
-xsi = 0.7;                               % increase damping
+wn_rd = wn_pd;  % same as pitch
+xsi = 0.7;      % increase damping
 p1 = -2*exp(-xsi*wn_rd*Ts)*cos(wn_rd*Ts*sqrt(1-xsi^2));
 p2 = exp(-2*xsi*wn_rd*Ts);
 P = [1 p1 p2];
@@ -168,7 +170,7 @@ stabRoll = {R0,S0,T0};
 
 %% perform Q parametrization
 clc;
-nq = 15;
+nq = 30;
 Q0 = ones(1,nq);
 Mm = 0.5;
 Uinf = 25;
@@ -314,7 +316,7 @@ yline(0,'--r')
 channel = 3;
 data = f.openBin([out_path out_folder],out_names{channel},nb);
 % speed = diff(data(:,channel))/Ts;
-sim = lsim(tf(conv(qpYaw{3},[zeros(1,dy) Gyd.Numerator{1}]),Py,Ts,'variable','z^-1'),ttraj);
+sim = lsim(tf(conv(qpYaw{3},[zeros(1,dy) Gydotd.Numerator{1}]),Py,Ts,'variable','z^-1'),ttraj);
 subplot(233);hold on
 plot(TT,sim,'--r','Linewidth',1.5);
 plot(TT,data(:,channel),'b');
