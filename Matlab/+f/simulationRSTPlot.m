@@ -2,22 +2,21 @@ function simulationRSTPlot(A,B,d,Rcf,Scf,Tcf,P,Ts)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 Tp = 0:Ts:10;
-B = [zeros(1,d) B];
 
 % output/ref : y/r = q^-d*B*T/P
-YoR = tf(conv(Tcf,B),P,Ts,'variable','z^-1');
+YoR = tf(conv(Tcf,B),P,Ts,'variable','z^-1','IODelay',d);
 stepT = step(YoR,Tp);
 
 % input/ref : u/r = A*T/P
-UoR = tf(conv(Tcf,A),P,Ts,'variable','z^-1');
+UoR = tf(conv(Tcf,A),P,Ts,'variable','z^-1','IODelay',d);
 stepU = step(UoR,Tp);
 
 % output/input disturbance : y/v = A*S/P
-YoV = tf(conv(Scf,A),P,Ts,'variable','z^-1');
+YoV = tf(conv(Scf,A),P,Ts,'variable','z^-1','IODelay',d);
 stepS = step(YoV,Tp);
 
 % input/ref : u/r = A*T/P
-UoV = tf(conv(Rcf,A),P,Ts,'variable','z^-1');
+UoV = tf(conv(Rcf,A),P,Ts,'variable','z^-1','IODelay',d);
 stepU = step(UoV,Tp);
 
 figure()
