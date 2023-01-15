@@ -4,8 +4,8 @@ addpath('../');
 %% Edit zone %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % EXPERIMENT INFO
 Ts = 50;            
-t_SS = 10;
-prMode = 'CL';
+t_SS = 25;
+prMode = 'OL';
 
 % INPUT INFO 
 % shift register length, frequency divider
@@ -72,7 +72,7 @@ end
 N = numel(R2Y{1,1});
 p = N/M;
 
-f.pwrSpectralDensityPlot(R2Y{4,1},M,Ts,1);
+f.pwrSpectralDensityPlot(R2Y{1,1},M,Ts,1);
 %% Get CL matrix: Tau
 %init
 R2Y_CL = [];
@@ -105,10 +105,10 @@ R2U_CL.OutputName = namesOut;
 
 %plot 
 figure()
-bodemag(R2Y_CL,R2U_CL); grid minor ;
-title('System with controller(s)');legend('T','U')
+bodemag(R2Y_CL,inv(R2U_CL)); grid minor ;
+title('System with controller(s)');legend('T_{yr}','inv(T_{ur})')
 %% Get OL matrix: G
-G = R2U_CL\R2Y_CL;
+G = R2Y_CL*inv(R2U_CL);
 G.InputName = namesIn;
 G.OutputName = namesOut;
 
@@ -123,71 +123,5 @@ grid minor;title('G_{OL}')
 legend('sampling points','G','1st approx.')
 
 save([store_path file_G],'G')
-
-%% TEST TO BE DELETED
-% READ: location and file names for stabilizing controllers
-file_K0 = 'ms50_stabK0';
-K0 = load([store_path file_K0]);
-names_K0 = {'stabPitch','stabRoll','stabYaw'};
-%tf(0)
-init = repmat(tf([0],[1],Ts),[3,3]);
-
-% controllers to matrix form
-K = {init, init, init};
-for i = 1:3
-    tmp = getfield(K0, names_K0{i}); %pry
-    K{1}(i,i) = tf(tmp{1},1,Ts); %R
-    K{2}(i,i) = tf(1,tmp{2},Ts); %Sinv
-    K{3}(i,i) = tf(tmp{3},1,Ts); %T
-end
-R = K{1}; 
-Sinv = K{2};
-T = K{3};
-
-R2YG = R2Y_CL*inv(Sinv*T-Sinv*R*R2Y_CL);
-R2UG = R^(-1)*(T*inv(R2U_CL)-inv(Sinv));
-
-bodemag(G,'*',R2YG,R2UG,G0s,'--r',{f1,f2})
-legend('G','R2YG','R2UG')
-
-%%
-% figure()
-% bodemag(G(1,1),G(1,2),G(1,3))
-% legend('pp','pr','py')
-% figure()
-% bodemag(G(2,1),G(2,2),G(2,3))
-% legend('rp','rr','ry')
-% figure()
-% bodemag(G(3,1),G(3,2),G(3,3))
-% legend('yp','yr','yy')
-% %%
-% close all;
-% TT = (0:length(R2Y{1,1})-1)*Ts;
-% subplot(431)
-% plot(TT,R2Y{1,1});title('\theta_{pp}');axis tight
-% subplot(434)
-% plot(TT,R2Y{2,1});title('\theta_{rp}');axis tight
-% subplot(437)
-% plot(TT,R2Y{3,1});title('\theta_{yp}');axis tight
-% subplot(4,3,10)
-% plot(TT,R2Y{4,1});title('ref_p');axis tight
-% 
-% subplot(432)
-% plot(TT,R2Y{1,2});title('\theta_{pr}');axis tight
-% subplot(435)
-% plot(TT,R2Y{2,2});title('\theta_{rr}');axis tight
-% subplot(438)
-% plot(TT,R2Y{3,2});title('\theta_{yr}');axis tight
-% subplot(4,3,11)
-% plot(TT,R2Y{4,2});title('ref_r');axis tight
-% 
-% subplot(433)
-% plot(TT,R2Y{1,3});title('\theta_{py}');axis tight
-% subplot(436)
-% plot(TT,R2Y{2,3});title('\theta_{ry}');axis tight
-% subplot(439)
-% plot(TT,R2Y{3,3});title('\theta_{yy}');axis tight
-% subplot(4,3,12)
-% plot(TT,R2Y{4,3});title('ref_y');axis tight
 
 
