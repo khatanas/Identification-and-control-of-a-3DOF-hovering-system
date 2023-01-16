@@ -1,0 +1,1 @@
+The myRio device as to be mounted as a network drive Z:

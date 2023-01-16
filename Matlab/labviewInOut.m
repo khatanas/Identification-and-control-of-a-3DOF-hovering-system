@@ -13,13 +13,13 @@ store_path = '.\store\';
 % ctrl_path = 'C:\Users\David\Desktop\ProjSem\3dof\Matlab\trash\';
 
 %sampling time 
-Ts = 50; %ms
+Ts = 10; %ms
 
 %additional time to reach steady-state
 t_SS = 10;
 
 %reference signal: length of simulation
-t_sim = 60;
+t_sim = 120;
 
 %PRBS signal:
 p = 7;      %nbr od period
