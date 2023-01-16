@@ -1,9 +1,3 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PHILIPPE SCHUCHERT            %
-% SCI-STI-AK, EPFL              %
-% philippe.schuchert@epfl.ch    %
-% March 2021                    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clc; close all; clear all
 addpath('../')

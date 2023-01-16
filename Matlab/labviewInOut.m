@@ -36,7 +36,7 @@ dist = f.generatePRBS(n,p,fD,Ts_sec,1);
 
 %test traj
 ttraj = [zeros(1,t_SS/Ts_sec) ones(1,10/Ts_sec) -ones(1,10/Ts_sec) ones(1,10/Ts_sec) zeros(1,20/Ts_sec)];
-save([store_path 'ms10-ttraj'], 'ttraj');
+save([store_path 'ms50-ttraj'], 'ttraj');
 
 %% Create sequences for motor
 
